@@ -222,7 +222,7 @@ namespace NugSQL
                     ilg.Emit(OpCodes.Brtrue, lblIsNull);
 
                     // Check for converter
-                    var converter = provider.GetType().GetMethod("Convert", 1, new Type[]{reader.GetFieldType(i)});
+                    var converter = provider.GetType().GetMethod("Convert", 1, new Type[]{ reader.GetFieldType(i), proptype });
 
 
                     ilg.Emit(OpCodes.Ldloc, rr); // Stack: /result/
@@ -245,6 +245,8 @@ namespace NugSQL
                         ilg.Emit(OpCodes.Callvirt, getter); // Stack: /result/value
                         if(converter != null)
                         {
+                            var defaultProp = ilg.DeclareLocal(proptype);
+                            ilg.Emit(OpCodes.Ldloc, defaultProp);  // Stack: /result/value/DefaultValue
                             ilg.Emit(OpCodes.Call, converter.MakeGenericMethod(proptype)); // Stack: /result/convertedValue
                         }
                     }
