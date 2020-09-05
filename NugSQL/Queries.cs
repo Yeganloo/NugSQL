@@ -157,11 +157,16 @@ namespace NugSQL
                     cnn.Open();
                     using(var reader = cmd.ExecuteReader())
                     {
-                        while (reader.Read())
+                        if(reader.Read())
                         {
                             yield return ResultGenerators[resGen] != null ?
                                 (T)ResultGenerators[resGen](reader)
                                 :BuildResultGenerator<T>(reader, resGen);
+                        }
+                        var gen = ResultGenerators[resGen];
+                        while (reader.Read())
+                        {
+                            yield return (T)gen(reader);
                         }
                     }
                 }
