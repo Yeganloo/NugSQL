@@ -2,9 +2,10 @@ namespace NugSQL
 {
     public enum ResultTypes : byte
     {
-        affected = 0,
-        scalar = 1,
-        one = 2,
-        many = 3,
+        none = 0,
+        affected = 1,
+        scalar = 2,
+        one = 3,
+        many = 4,
     }
 }

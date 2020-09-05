@@ -123,7 +123,8 @@
                 MethodInfo fn = IType.GetMethod(name);
                 if (fn == null)
                     continue;
-
+                if(fn.ReturnType == typeof(void))
+                    resultType = ResultTypes.none;
                 var parameters = fn.GetParameters().ToArray();
                 var mb = tb.DefineMethod(fn.Name,
                     MethodAttributes.Public | MethodAttributes.Virtual,
@@ -131,13 +132,8 @@
                     fn.ReturnType,
                     parameters.Select(x => x.ParameterType).ToArray());
                 {
-                    if(fn.IsGenericMethod)
-                    {
-                        // TODO Handle generic arguments
-                    }
                     var il = mb.GetILGenerator();
                     var arr = il.DeclareLocal(typeof(DbParameter[]));
-                    var pari = il.DeclareLocal(parameterType);
                     // Create Parameters Array
                     il.Emit(OpCodes.Ldc_I4, parameters.Length);
                     il.Emit(OpCodes.Newarr, parameterType);
@@ -193,12 +189,8 @@
                             {
                                 if(provider.NeedTypeConversion(parameters[i].ParameterType))
                                 {
-                                    il.Emit(OpCodes.Dup);
-                                    il.Emit(OpCodes.Stloc, pari);
-                                    il.Emit(OpCodes.Ldsfld, basetype.GetField("provider"));
-                                    il.Emit(OpCodes.Ldloc, pari);
                                     il.Emit(OpCodes.Ldarg, i + 1);
-                                    il.Emit(OpCodes.Callvirt, 
+                                    il.Emit(OpCodes.Call,
                                         prvType.GetMethod("MappParameter",
                                             new Type[]{parameterType, parameters[i].ParameterType}));
                                 }
@@ -222,6 +214,11 @@
                     switch(resultType)
                     {
                         default:
+                        case ResultTypes.none:
+                            il.Emit(OpCodes.Call,
+                                basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Emit(OpCodes.Pop); // Empty stack before return.
+                            break;
                         case ResultTypes.affected:
                             var mth = basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance);
                             il.Emit(OpCodes.Call, mth);

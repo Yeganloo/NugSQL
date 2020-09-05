@@ -22,21 +22,25 @@ namespace NugSQL.Test
 
             var query = QuerBuilder.New<ISample>(cnn, typ);
             Console.WriteLine("Nugsql -------------------");
-            foreach (var res in query.get_users("po%"))
-            {
-                Console.WriteLine(res.name);
-                Console.WriteLine(res.count);
-            }
-            var q = @"select  1+1 as ""count"", u.name
-                from user u
-                where u.name like @name";
-            
-            var db = new PetaPoco.Database(cnn, "Npgsql");
-            var pres = db.Single<Output>(q, new { name="po%" });
-            Console.WriteLine("PetaPoco -------------------");
-            Console.WriteLine(pres.name);
-            Console.WriteLine(pres.count);
+            //Console.WriteLine("schema");
+            //query.create_schema_test();
+            //Console.WriteLine("table");
+            //query.create_tbl_user();
 
+            // Console.WriteLine("create user");
+            // Console.WriteLine(query.create_user("admin", new byte[32], new byte[16], @"{ ""nikname"": ""sys_admin"" }", 1));
+            // Console.WriteLine(query.create_user("amin", new byte[32], new byte[16], @"{ ""nikname"": ""amin"" }", 2));
+            Console.WriteLine("get user");
+            foreach (var res in query.get_users("a%"))
+            {
+                Console.WriteLine(res.id);
+                Console.WriteLine(res.user_name);
+                Console.WriteLine(res.profile);
+                Console.WriteLine(res.status);
+                Console.WriteLine(res.salt.Length);
+                Console.WriteLine(res.password.Length);
+                Console.WriteLine("-------------------");
+            }
         }
     }
 }

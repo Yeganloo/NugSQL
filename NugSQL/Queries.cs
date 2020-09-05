@@ -189,7 +189,7 @@ namespace NugSQL
             {
                 ilg.Emit(OpCodes.Ldarg_0);
                 ilg.Emit(OpCodes.Ldc_I4_0);
-                ilg.Emit(OpCodes.Callvirt, recordType.GetMethod($"GetValue"));
+                ilg.Emit(OpCodes.Callvirt, recordType.GetMethod($"Get{reader.GetFieldType(0).Name}"));
             }
             else if (returnType == typeof(string))
             {
@@ -199,8 +199,9 @@ namespace NugSQL
             }
             else if(returnType == typeof(byte[]))
             {
-                // TODO Handle byte array.
-                
+                ilg.Emit(OpCodes.Ldarg_0);
+                ilg.Emit(OpCodes.Ldc_I4_0);
+                ilg.Emit(OpCodes.Callvirt, recordType.GetMethod($"GetValue"));
             }
             else
             {
@@ -211,9 +212,10 @@ namespace NugSQL
                 for(int i=0; i< reader.FieldCount; i++)
                 {
                     var prop = returnType.GetProperty(reader.GetName(i));
-                    var proptype = prop.PropertyType;
                     if(prop == null)
                         continue;
+
+                    var proptype = prop.PropertyType;
                     
                     ilg.Emit(OpCodes.Ldarg_0); // Stack: /reader
                     ilg.Emit(OpCodes.Ldc_I4, i); // Stack: /reader/i
@@ -222,7 +224,7 @@ namespace NugSQL
                     ilg.Emit(OpCodes.Brtrue, lblIsNull);
 
                     // Check for converter
-                    var converter = provider.GetType().GetMethod("Convert", 1, new Type[]{ reader.GetFieldType(i), proptype });
+                    var converter = provider.GetType().GetMethod("Convert", new Type[]{ reader.GetFieldType(i), proptype });
 
 
                     ilg.Emit(OpCodes.Ldloc, rr); // Stack: /result/
@@ -247,7 +249,7 @@ namespace NugSQL
                         {
                             var defaultProp = ilg.DeclareLocal(proptype);
                             ilg.Emit(OpCodes.Ldloc, defaultProp);  // Stack: /result/value/DefaultValue
-                            ilg.Emit(OpCodes.Call, converter.MakeGenericMethod(proptype)); // Stack: /result/convertedValue
+                            ilg.Emit(OpCodes.Call, converter); // Stack: /result/convertedValue
                         }
                     }
                     ilg.Emit(OpCodes.Callvirt, prop.SetMethod); // Stack: /
