@@ -4,8 +4,6 @@ namespace NugSQL
 
     public interface IQueries
     {
-        void BeginTransaction(IsolationLevel isolationLevel);
-        void RollBack();
-        void Commite();
+        IDbTransaction BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
     }
 }

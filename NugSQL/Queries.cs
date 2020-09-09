@@ -21,8 +21,10 @@ namespace NugSQL
         }
         protected DbProviderFactory _database;
         private string _connectionString;
-        private IDbConnection _sharedConnection;
+        private DbConnection _sharedConnection;
+        private int _sharedConnectionDepth;
         private IDbTransaction _transaction;
+
 
 
         public Queries(string cnn, DbProviderFactory factory)
@@ -34,11 +36,27 @@ namespace NugSQL
 
         protected DbConnection GetConnection()
         {
-            var cnn = _database.CreateConnection();
-            cnn.ConnectionString = _connectionString;
-            if (cnn.State == ConnectionState.Broken)
-                    cnn.Close();
-            return cnn;
+            if(_sharedConnectionDepth++ == 0)
+            {
+                var cnn = _database.CreateConnection();
+                cnn.ConnectionString = _connectionString;
+                if (cnn.State == ConnectionState.Broken)
+                        cnn.Close();
+                if (cnn.State == ConnectionState.Closed)
+                {
+                    cnn.Open();
+                }
+                _sharedConnection = cnn;
+            }
+            return this._sharedConnection;
+        }
+
+        protected void CloseSharedConnection()
+        {
+            if(--_sharedConnectionDepth < 1)
+            {
+                _sharedConnection.Close();
+            }
         }
 
         protected IDbCommand CreateCommand(IDbConnection cnn, IDbTransaction transaction)
@@ -50,34 +68,17 @@ namespace NugSQL
             return cmd;
         }
 
-        public void BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+        public IDbTransaction BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
         {
-            if(_transaction == null)
-                _transaction = _sharedConnection.BeginTransaction(isolationLevel);
+            _transaction = _sharedConnection.BeginTransaction(isolationLevel);
+            return _transaction;
         }
-
-        public void Commite()
-        {
-            _transaction.Commit();
-            _transaction.Dispose();
-            _transaction = null;
-        }
-
-        public void RollBack()
-        {
-            if(_transaction != null)
-            {
-                _transaction.Rollback();
-                _transaction.Dispose();
-                _transaction = null;
-            }
-        }
-
+        
         protected int NonQuery(string query, DbParameter[] parameters)
         {
-            using(var cnn = GetConnection())
+            try
             {
-                cnn.ConnectionString = this._connectionString;
+                var cnn = GetConnection();
                 using(var cmd = CreateCommand(cnn, this._transaction))
                 {
                     cmd.CommandText = query;
@@ -86,17 +87,20 @@ namespace NugSQL
                     {
                         cmd.Parameters.Add(param);
                     }
-                    cnn.Open();
                     return cmd.ExecuteNonQuery();
                 }
+            }
+            finally
+            {
+                CloseSharedConnection();
             }
         }
 
         protected T Scalar<T>(string query, DbParameter[] parameters)
         {
-            using(var cnn = GetConnection())
+            try
             {
-                cnn.ConnectionString = this._connectionString;
+                var cnn = GetConnection();
                 using(var cmd = CreateCommand(cnn, this._transaction))
                 {
                     cmd.CommandText = query;
@@ -105,18 +109,21 @@ namespace NugSQL
                     {
                         cmd.Parameters.Add(param);
                     }
-                    cnn.Open();
                     var res = (T)cmd.ExecuteScalar();
                     return res;
                 }
+            }
+            finally
+            {
+                CloseSharedConnection();
             }
         }
 
         protected T One<T>(string query, DbParameter[] parameters, int resGen)
         {
-            using(var cnn = GetConnection())
+            try
             {
-                cnn.ConnectionString = this._connectionString;
+                var cnn = GetConnection();
                 using(var cmd = CreateCommand(cnn, this._transaction))
                 {
                     cmd.CommandText = query;
@@ -125,7 +132,6 @@ namespace NugSQL
                     {
                         cmd.Parameters.Add(param);
                     }
-                    cnn.Open();
                     using(var reader = cmd.ExecuteReader())
                     {
                         if(reader.Read())
@@ -139,13 +145,17 @@ namespace NugSQL
                     }
                 }
             }
+            finally
+            {
+                CloseSharedConnection();
+            }
         }
 
         protected IEnumerable<T> Query<T>(string query, DbParameter[] parameters, int resGen)
         {
-            using(var cnn = GetConnection())
+            try
             {
-                cnn.ConnectionString = this._connectionString;
+                var cnn = GetConnection();
                 using(var cmd = CreateCommand(cnn, this._transaction))
                 {
                     cmd.CommandText = query;
@@ -154,7 +164,6 @@ namespace NugSQL
                     {
                         cmd.Parameters.Add(param);
                     }
-                    cnn.Open();
                     using(var reader = cmd.ExecuteReader())
                     {
                         if(reader.Read())
@@ -170,6 +179,10 @@ namespace NugSQL
                         }
                     }
                 }
+            }
+            finally
+            {
+                CloseSharedConnection();
             }
         }
 
@@ -271,9 +284,15 @@ namespace NugSQL
         public void Dispose()
         {
             if(_transaction != null)
-                RollBack();
+            {
+                _transaction.Dispose();
+                _transaction = null;
+            }
             if (_sharedConnection.State != ConnectionState.Closed)
-                    _sharedConnection.Close();
+            {
+                _sharedConnection.Close();
+                _sharedConnectionDepth = 0;
+            }
         }
 
     }
