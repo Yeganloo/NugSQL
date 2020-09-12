@@ -19,6 +19,8 @@ namespace NugSQL.Providers
         {
             return false;
         }
+
+        public virtual string ParameterPrefix { get; } = ":";
         
         protected DbProviderFactory GetFactory(params string[] assemblyQualifiedNames)
         {

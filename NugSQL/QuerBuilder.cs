@@ -160,7 +160,7 @@
                             // Stack: /arr/i/p[i]/
                             // Set parameter name
                             il.Emit(OpCodes.Dup);
-                            il.Emit(OpCodes.Ldstr, parameters[i].Name);
+                            il.Emit(OpCodes.Ldstr, $"{provider.ParameterPrefix}{parameters[i].Name}");
                             il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.ParameterName)).SetMethod);
                             // Stack: /arr/i/p[i]/
                             //if (value == null)
@@ -199,6 +199,13 @@
                                     il.Emit(OpCodes.Dup);
                                     il.Emit(OpCodes.Ldarg, i + 1);
                                     il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value)).SetMethod);
+                                    if(Enum.TryParse<DbType>(parameters[i].ParameterType.Name, true,out DbType dbtype))
+                                    {
+                                        Console.WriteLine("ok");
+                                        il.Emit(OpCodes.Dup);
+                                        il.Emit(OpCodes.Ldc_I4, (int)dbtype);
+                                        il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType)).SetMethod);
+                                    }
                                 }
                                 il.Emit(OpCodes.Stelem_Ref);
                             }

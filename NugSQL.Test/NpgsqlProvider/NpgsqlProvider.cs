@@ -83,15 +83,15 @@ namespace NugSQL.Test
 
             using(var tr1 = query.BeginTransaction())
             {
-                query.create_user("u1", new byte[0], new byte[0], @"{ ""title"":""test"" }", 1);
+                query.create_user("u1", new byte[0], new byte[0], @"{ ""title"":""test"" }", 0);
                 using(var tr2 = query.BeginTransaction())
                 {
-                    query.create_user("u2", new byte[0], new byte[0], @"{ ""title"":""test"" }", 1);
+                    query.create_user("u2", new byte[0], new byte[0], @"{ ""title"":""test"" }", 0);
                     tr2.Commit();
                 }
                 using(var tr3 = query.BeginTransaction())
                 {
-                    query.create_user("u3", new byte[0], new byte[0], @"{ ""title"":""test3"" }", 1);
+                    query.create_user("u3", new byte[0], new byte[0], @"{ ""title"":""test3"" }", 0);
                     tr3.Rollback();
                 }
                 tr1.Commit();
