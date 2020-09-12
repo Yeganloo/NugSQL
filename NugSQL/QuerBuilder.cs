@@ -201,7 +201,6 @@
                                     il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value)).SetMethod);
                                     if(Enum.TryParse<DbType>(parameters[i].ParameterType.Name, true,out DbType dbtype))
                                     {
-                                        Console.WriteLine("ok");
                                         il.Emit(OpCodes.Dup);
                                         il.Emit(OpCodes.Ldc_I4, (int)dbtype);
                                         il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType)).SetMethod);
