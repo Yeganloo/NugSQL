@@ -33,7 +33,7 @@ The 2 last rules are the motivations to use an ORM!
 
 ## Usage:
 
-1. ### write your queries:
+### 1. write your queries:
 create user query:
 ``` SQL
 -- :name create_user :scalar
@@ -49,7 +49,7 @@ select  *
 ```
 > **Attention**: The first line is a SQL-comment that specify which method should be linked to this query and what kind of result we expect from this query.
 
-2. ### define your entities:
+### 2. define your entities:
 ```c#
 public class User
 {
@@ -67,7 +67,7 @@ public class User
 }
 ```
 
-3. ### define your database interface:
+### 3. define your database interface:
 ``` c#
 public interface IMyDB: IQueries
 {
@@ -76,7 +76,7 @@ public interface IMyDB: IQueries
 }
 ```
 
-4. ### compile queries:
+### 4. compile queries:
 From external files:
 ``` c#
 var MyDBCompiledQuery =  QuerBuilder.Compile<IMyDB>("path/to/queries", new PgDatabaseProvider());
@@ -87,7 +87,7 @@ var assembly = Assembly.GetAssembly(typeof(IMyDB));
 var MyDBCompiledQuery =  QuerBuilder.Compile<IMyDB>(assembly, new PgDatabaseProvider());
 ```
 
-5. ### connect to database and use it:
+### 5. connect to database and use it:
 ``` c#
 var MyDB = QuerBuilder.New<IMyDB>(cnn, MyDBCompiledQuery);
 using(var tr = MyDB.BeginTransaction())
