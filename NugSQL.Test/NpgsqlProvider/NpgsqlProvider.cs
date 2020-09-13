@@ -1,3 +1,4 @@
+using System;
 using Xunit;
 using System.Reflection;
 using System.IO;
@@ -10,13 +11,28 @@ namespace NugSQL.Test
         string cnn = "Host=localhost;Username=postgres;Password=123;Database=postgres";
 
         [Fact]
-        public void CreateScheemaTest()
+        public void CompileFromFiles()
         {
             var typ =  QuerBuilder.Compile<ISample>(
                 $"{Path.GetDirectoryName(Assembly.GetAssembly(typeof(CompileTest)).Location)}{Path.DirectorySeparatorChar}queries",
                 new PgDatabaseProvider()
             );
+            var query = QuerBuilder.New<ISample>(cnn, typ);
+        }
 
+        [Fact]
+        public void CompileFromResources()
+        {
+            var assembly = Assembly.GetAssembly(typeof(CompileTest));
+            var typ =  QuerBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
+            var query = QuerBuilder.New<ISample>(cnn, typ);
+        }
+
+        [Fact]
+        public void CreateScheemaTest()
+        {
+            var assembly = Assembly.GetAssembly(typeof(CompileTest));
+            var typ =  QuerBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
             var query = QuerBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
         }

@@ -1,6 +1,7 @@
 ﻿namespace NugSQL
 {
     using System;
+    using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
     using System.IO;
@@ -30,7 +31,6 @@
             dbFieldRef = basetype.GetField("_database", BindingFlags.NonPublic | BindingFlags.Instance);
             CreateParamInfo = dbFactory.GetMethod("CreateParameter", new Type[0]);
         }
-
 
         private static TypeBuilder GetBuilder(Type typ, DatabaseProvider provider)
         {
@@ -81,6 +81,16 @@
 
         public static Type Compile<I>(string source, DatabaseProvider provider) where I : IQueries
         {
+            return Compile<I>(ReadQueries(source), provider);
+        }
+
+        public static Type Compile<I>(Assembly assembly, DatabaseProvider provider) where I : IQueries
+        {
+            return Compile<I>(ReadQueries(assembly), provider);
+        }
+
+        public static Type Compile<I>(IEnumerable<RawQuery> queries, DatabaseProvider provider) where I : IQueries
+        {
             var IType = typeof(I);
             var prvType = provider.GetType();
             var tb = GetBuilder(IType, provider);
@@ -88,43 +98,12 @@
             
             // Query Implementation
             
-            foreach(var fl in Directory.GetFiles(source, "*.sql"))
+            foreach(var query in queries)
             {
-                // TODO read the query
-                ResultTypes resultType = ResultTypes.affected;
-                string name = string.Empty;
-                string query;
-                using(var f = new StreamReader(File.Open(fl, FileMode.Open, FileAccess.Read)))
-                {
-                    var cfg = f.ReadLine()?.Split(new char[]{':',' '}, StringSplitOptions.RemoveEmptyEntries);
-                    for (var i=0; i < cfg?.Length; i++)
-                    {
-                        switch(cfg[i])
-                        {
-                            case "many":
-                                resultType = ResultTypes.many;
-                                break;
-                            case "one":
-                                resultType = ResultTypes.one;
-                                break;
-                            case "affected":
-                                resultType = ResultTypes.affected;
-                                break;
-                            case "scalar":
-                                resultType = ResultTypes.scalar;
-                                break;
-                            case "name":
-                                name = cfg[++i];
-                                break;
-                        }
-                    }
-                    query = f.ReadToEnd();
-                }
-                MethodInfo fn = IType.GetMethod(name);
+                MethodInfo fn = IType.GetMethod(query.Name);
                 if (fn == null)
                     continue;
-                if(fn.ReturnType == typeof(void))
-                    resultType = ResultTypes.none;
+                
                 var parameters = fn.GetParameters().ToArray();
                 var mb = tb.DefineMethod(fn.Name,
                     MethodAttributes.Public | MethodAttributes.Virtual,
@@ -214,38 +193,47 @@
                     // Stack: /
                     // Select query executor and pass the query + parameters
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Ldstr, query);
+                    il.Emit(OpCodes.Ldstr, query.Query);
                     il.Emit(OpCodes.Ldloc, arr);
                     // Stack: this/query/arr/
-                    switch(resultType)
+                    if(fn.ReturnType == typeof(void))
                     {
-                        default:
-                        case ResultTypes.none:
-                            il.Emit(OpCodes.Call,
-                                basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
-                            il.Emit(OpCodes.Pop); // Empty stack before return.
-                            break;
-                        case ResultTypes.affected:
-                            var mth = basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance);
-                            il.Emit(OpCodes.Call, mth);
-                            break;
-                        case ResultTypes.scalar:
-                            il.Emit(OpCodes.Call,
-                                basetype.GetMethod("Scalar", BindingFlags.NonPublic | BindingFlags.Instance)
-                                .MakeGenericMethod(new Type[]{fn.ReturnType}));
-                            break;
-                        case ResultTypes.one:
-                            il.Emit(OpCodes.Ldc_I4, resGenCount++);
-                            il.Emit(OpCodes.Call,
-                                basetype.GetMethod("One", BindingFlags.NonPublic | BindingFlags.Instance)
-                                .MakeGenericMethod(new Type[]{fn.ReturnType}));
-                            break;
-                        case ResultTypes.many:
-                            il.Emit(OpCodes.Ldc_I4, resGenCount++);
-                            il.Emit(OpCodes.Call,
-                                basetype.GetMethod("Query", BindingFlags.NonPublic | BindingFlags.Instance)
-                                .MakeGenericMethod(new Type[]{fn.ReturnType.GenericTypeArguments[0]}));
-                            break;
+                        il.Emit(OpCodes.Call,
+                            basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
+                        il.Emit(OpCodes.Pop); // Empty stack before return.
+                    }
+                    else
+                    {
+                        switch(query.ResultType)
+                        {
+                            default:
+                            case ResultTypes.none:
+                                il.Emit(OpCodes.Call,
+                                    basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
+                                il.Emit(OpCodes.Pop); // Empty stack before return.
+                                break;
+                            case ResultTypes.affected:
+                                var mth = basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance);
+                                il.Emit(OpCodes.Call, mth);
+                                break;
+                            case ResultTypes.scalar:
+                                il.Emit(OpCodes.Call,
+                                    basetype.GetMethod("Scalar", BindingFlags.NonPublic | BindingFlags.Instance)
+                                    .MakeGenericMethod(new Type[]{fn.ReturnType}));
+                                break;
+                            case ResultTypes.one:
+                                il.Emit(OpCodes.Ldc_I4, resGenCount++);
+                                il.Emit(OpCodes.Call,
+                                    basetype.GetMethod("One", BindingFlags.NonPublic | BindingFlags.Instance)
+                                    .MakeGenericMethod(new Type[]{fn.ReturnType}));
+                                break;
+                            case ResultTypes.many:
+                                il.Emit(OpCodes.Ldc_I4, resGenCount++);
+                                il.Emit(OpCodes.Call,
+                                    basetype.GetMethod("Query", BindingFlags.NonPublic | BindingFlags.Instance)
+                                    .MakeGenericMethod(new Type[]{fn.ReturnType.GenericTypeArguments[0]}));
+                                break;
+                        }
                     }
                     il.Emit(OpCodes.Ret);
                     tb.DefineMethodOverride(mb, fn);
@@ -256,6 +244,82 @@
             typ.GetField("_ResultGenerators", BindingFlags.Static | BindingFlags.NonPublic)
                 .SetValue(null, new Func<IDataReader, object>[resGenCount]);
             return typ;
+        }
+
+        public static IEnumerable<RawQuery> ReadQueries(string source)
+        {
+            List<RawQuery> res = new List<RawQuery>();
+            foreach(var fl in Directory.GetFiles(source, "*.sql"))
+            {
+                ResultTypes resultType = ResultTypes.affected;
+                string name = string.Empty;
+                using(var f = new StreamReader(File.Open(fl, FileMode.Open, FileAccess.Read)))
+                {
+                    var cfg = f.ReadLine()?.Split(new char[]{':',' '}, StringSplitOptions.RemoveEmptyEntries);
+                    for (var i=0; i < cfg?.Length; i++)
+                    {
+                        switch(cfg[i])
+                        {
+                            case "many":
+                                resultType = ResultTypes.many;
+                                break;
+                            case "one":
+                                resultType = ResultTypes.one;
+                                break;
+                            case "affected":
+                                resultType = ResultTypes.affected;
+                                break;
+                            case "scalar":
+                                resultType = ResultTypes.scalar;
+                                break;
+                            case "name":
+                                name = cfg[++i];
+                                break;
+                        }
+                    }
+                    res.Add(new RawQuery(name, f.ReadToEnd(), resultType));
+                }
+            }
+            return res;
+        }
+
+        public static IEnumerable<RawQuery> ReadQueries(Assembly source)
+        {
+            List<RawQuery> res = new List<RawQuery>();
+            foreach(var fl in source.GetManifestResourceNames())
+            {
+                if(!fl.EndsWith(".sql"))
+                    continue;
+                ResultTypes resultType = ResultTypes.affected;
+                string name = string.Empty;
+                using(var f = new StreamReader(source.GetManifestResourceStream(fl)))
+                {
+                    var cfg = f.ReadLine()?.Split(new char[]{':',' '}, StringSplitOptions.RemoveEmptyEntries);
+                    for (var i=0; i < cfg?.Length; i++)
+                    {
+                        switch(cfg[i])
+                        {
+                            case "many":
+                                resultType = ResultTypes.many;
+                                break;
+                            case "one":
+                                resultType = ResultTypes.one;
+                                break;
+                            case "affected":
+                                resultType = ResultTypes.affected;
+                                break;
+                            case "scalar":
+                                resultType = ResultTypes.scalar;
+                                break;
+                            case "name":
+                                name = cfg[++i];
+                                break;
+                        }
+                    }
+                    res.Add(new RawQuery(name, f.ReadToEnd(), resultType));
+                }
+            }
+            return res;
         }
 
         public static I New<I>(string connection, Type typ)

@@ -50,7 +50,6 @@ select  *
 > **Attention**: The first line is a SQL-comment that specify which method should be linked to this query and what kind of result we expect from this query.
 
 2. ### define your entities:
-
 ```c#
 public class User
 {
@@ -69,7 +68,6 @@ public class User
 ```
 
 3. ### define your database interface:
-
 ``` c#
 public interface IMyDB: IQueries
 {
@@ -79,20 +77,26 @@ public interface IMyDB: IQueries
 ```
 
 4. ### compile queries:
+From external files:
 ``` c#
-var MyDBCompiled =  QuerBuilder.Compile<ISample>("path/to/queries", new PgDatabaseProvider());
+var MyDBCompiledQuery =  QuerBuilder.Compile<IMyDB>("path/to/queries", new PgDatabaseProvider());
+```
+Or from embedded resources:
+``` c#
+var assembly = Assembly.GetAssembly(typeof(IMyDB));
+var MyDBCompiledQuery =  QuerBuilder.Compile<IMyDB>(assembly, new PgDatabaseProvider());
 ```
 
 5. ### connect to database and use it:
 ``` c#
-var MyDB = QuerBuilder.New<ISample>(cnn, typ);
-using(var tr = query.BeginTransaction())
+var MyDB = QuerBuilder.New<IMyDB>(cnn, MyDBCompiledQuery);
+using(var tr = MyDB.BeginTransaction())
 {
     MyDB.create_user("u1", new byte[0], new byte[0], @"{ ""title"":""test1"" }", 1);
     MyDB.create_user("u2", new byte[0], new byte[0], @"{ ""title"":""test2"" }", 1);
     tr.Commit();
 }
-foreach(var u in query.get_users("u%"))
+foreach(var u in MyDB.get_users("u%"))
 {
     // Do something!
 }
