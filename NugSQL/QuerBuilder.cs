@@ -16,7 +16,6 @@
         private static readonly Type ifactory;
         private static readonly Type commandType;
         private static readonly Type dbFactory;
-        private static readonly Type parameterType;
         private static readonly FieldInfo dbFieldRef;
         private static readonly MethodInfo CreateParamInfo;
 
@@ -27,7 +26,6 @@
             ifactory = typeof(DbProviderFactory);
             commandType = typeof(DbCommand);
             dbFactory = typeof(DbProviderFactory);
-            parameterType = typeof(DbParameter);
             dbFieldRef = basetype.GetField("_database", BindingFlags.NonPublic | BindingFlags.Instance);
             CreateParamInfo = dbFactory.GetMethod("CreateParameter", new Type[0]);
         }
@@ -91,6 +89,7 @@
 
         public static Type Compile<I>(IEnumerable<RawQuery> queries, DatabaseProvider provider) where I : IQueries
         {
+            var parameterType = provider.Factory.CreateParameter().GetType();
             var IType = typeof(I);
             var prvType = provider.GetType();
             var tb = GetBuilder(IType, provider);
@@ -98,20 +97,23 @@
             
             // Query Implementation
             
-            foreach(var query in queries)
+            foreach(var fn in IType.GetMethods())
             {
-                MethodInfo fn = IType.GetMethod(query.Name);
-                if (fn == null)
-                    continue;
-                
+                RawQuery query = queries.SingleOrDefault(q => q.Name == fn.Name);
                 var parameters = fn.GetParameters().ToArray();
                 var mb = tb.DefineMethod(fn.Name,
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     CallingConventions.Standard | CallingConventions.HasThis,
                     fn.ReturnType,
                     parameters.Select(x => x.ParameterType).ToArray());
+                var il = mb.GetILGenerator();
+
+                if (query.Equals(default(RawQuery)))
                 {
-                    var il = mb.GetILGenerator();
+                    il.ThrowException(typeof(NotImplementedException));
+                }
+                else
+                {
                     var arr = il.DeclareLocal(typeof(DbParameter[]));
                     // Create Parameters Array
                     il.Emit(OpCodes.Ldc_I4, parameters.Length);
@@ -120,9 +122,10 @@
                     // Stack: /
                     for(int i=0; i< parameters.Length; i++)
                     {
+                        var parType = parameters[i].ParameterType;
                         il.Emit(OpCodes.Ldloc, arr);
                         // Stack: /arr/
-                        if(parameters[i].ParameterType.IsSubclassOf(parameterType))
+                        if(parType.IsSubclassOf(parameterType))
                         {
                             il.Emit(OpCodes.Ldc_I4, i);
                             il.Emit(OpCodes.Ldarg, i + 1);
@@ -142,48 +145,57 @@
                             il.Emit(OpCodes.Ldstr, $"{provider.ParameterPrefix}{parameters[i].Name}");
                             il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.ParameterName)).SetMethod);
                             // Stack: /arr/i/p[i]/
-                            //if (value == null)
-                            il.Emit(OpCodes.Ldarg, i + 1);
-                            il.Emit(OpCodes.Ldnull);
-                            il.Emit(OpCodes.Ceq);
                             var notNull = il.DefineLabel();
                             var isNull = il.DefineLabel();
-                            il.Emit(OpCodes.Brfalse, notNull);
-                            if (parameters[i].ParameterType.Name == "Byte[]")
+                            if (!parType.IsValueType)
                             {
+                                il.Emit(OpCodes.Ldarg, i + 1);
+                                il.Emit(OpCodes.Ldnull);
+                                il.Emit(OpCodes.Ceq);
+                                il.Emit(OpCodes.Brfalse, notNull);
+                                if (parameters[i].ParameterType.Name == "Byte[]")
+                                {
+                                    il.Emit(OpCodes.Dup);
+                                    il.Emit(OpCodes.Ldc_I4,(int)DbType.Binary);
+                                    il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType)).SetMethod);
+                                }
                                 il.Emit(OpCodes.Dup);
-                                il.Emit(OpCodes.Ldc_I4,(int)DbType.Binary);
-                                il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType)).SetMethod);
-                            }
-                            il.Emit(OpCodes.Dup);
-                            il.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField("Value"));
-                            il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value)).SetMethod);
+                                il.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField("Value"));
+                                il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value)).SetMethod);
 
-                            il.Emit(OpCodes.Stelem_Ref);
-                            // Stack: /
-                            il.Emit(OpCodes.Br, isNull);
+                                il.Emit(OpCodes.Stelem_Ref);
+                                // Stack: /
+                                il.Emit(OpCodes.Br, isNull);
+                            }
                             //else
                             il.MarkLabel(notNull);
                             // Stack: /arr/i/p[i]/
                             {
-                                if(provider.NeedTypeConversion(parameters[i].ParameterType))
+                                if(provider.NeedTypeConversion(parType))
                                 {
                                     il.Emit(OpCodes.Ldarg, i + 1);
                                     il.Emit(OpCodes.Call,
                                         prvType.GetMethod("MappParameter",
-                                            new Type[]{parameterType, parameters[i].ParameterType}));
+                                            new Type[]{parameterType, parType}));
+                                }
+                                // TODO why this part fail if i set dbtype in IL?!
+                                else if(Enum.TryParse<DbType>(parType.Name, true,out DbType dbtype))
+                                {
+                                    il.Emit(OpCodes.Ldarg, i + 1);
+                                    if(parType.IsValueType)
+                                    {
+                                        il.Emit(OpCodes.Box, parType);
+                                    }
+                                    il.Emit(OpCodes.Ldc_I4, (int)dbtype);
+                                    il.Emit(OpCodes.Call,
+                                        prvType.GetMethod("MappParameter",
+                                            new Type[]{parameterType, typeof(object), typeof(DbType)}));
                                 }
                                 else
                                 {
                                     il.Emit(OpCodes.Dup);
                                     il.Emit(OpCodes.Ldarg, i + 1);
                                     il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value)).SetMethod);
-                                    if(Enum.TryParse<DbType>(parameters[i].ParameterType.Name, true,out DbType dbtype))
-                                    {
-                                        il.Emit(OpCodes.Dup);
-                                        il.Emit(OpCodes.Ldc_I4, (int)dbtype);
-                                        il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType)).SetMethod);
-                                    }
                                 }
                                 il.Emit(OpCodes.Stelem_Ref);
                             }

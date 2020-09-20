@@ -6,9 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="npgsql" Version="4.1.4" />
-    <PackageReference Include="PetaPoco.Compiled" Version="6.0.459" />
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
     <PackageReference Include="coverlet.collector" Version="1.2.0" />
@@ -16,11 +17,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NugSQL\NugSQL.csproj" />
-    <Content Include="queries\*.*">
+    <Content Include="*-queries\*.*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="queries\*.*" />
+    <EmbeddedResource Include="pg-queries\*.*" />
   </ItemGroup>
 </Project>

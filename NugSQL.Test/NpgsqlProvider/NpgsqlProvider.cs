@@ -6,24 +6,29 @@ using NugSQL.Providers;
 
 namespace NugSQL.Test
 {
-    public class CompileTest
+    public class PostgresqlTest
     {
         string cnn = "Host=localhost;Username=postgres;Password=123;Database=postgres";
+
+        private string _QueryPath
+        {
+            get 
+            {
+                return $"{Path.GetDirectoryName(Assembly.GetAssembly(typeof(PostgresqlTest)).Location)}{Path.DirectorySeparatorChar}pg-queries";
+            }
+        }
 
         [Fact]
         public void CompileFromFiles()
         {
-            var typ =  QuerBuilder.Compile<ISample>(
-                $"{Path.GetDirectoryName(Assembly.GetAssembly(typeof(CompileTest)).Location)}{Path.DirectorySeparatorChar}queries",
-                new PgDatabaseProvider()
-            );
+            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
             var query = QuerBuilder.New<ISample>(cnn, typ);
         }
 
         [Fact]
         public void CompileFromResources()
         {
-            var assembly = Assembly.GetAssembly(typeof(CompileTest));
+            var assembly = Assembly.GetAssembly(typeof(PostgresqlTest));
             var typ =  QuerBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
             var query = QuerBuilder.New<ISample>(cnn, typ);
         }
@@ -31,7 +36,7 @@ namespace NugSQL.Test
         [Fact]
         public void CreateScheemaTest()
         {
-            var assembly = Assembly.GetAssembly(typeof(CompileTest));
+            var assembly = Assembly.GetAssembly(typeof(PostgresqlTest));
             var typ =  QuerBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
             var query = QuerBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
@@ -40,11 +45,7 @@ namespace NugSQL.Test
         [Fact]
         public void CreateTableTest()
         {
-            var typ =  QuerBuilder.Compile<ISample>(
-                $"{Path.GetDirectoryName(Assembly.GetAssembly(typeof(CompileTest)).Location)}{Path.DirectorySeparatorChar}queries",
-                new PgDatabaseProvider()
-            );
-
+            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
             var query = QuerBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
             query.create_tbl_user();
@@ -53,15 +54,11 @@ namespace NugSQL.Test
         [Fact]
         public void TransactionTest()
         {
-            var typ =  QuerBuilder.Compile<ISample>(
-                $"{Path.GetDirectoryName(Assembly.GetAssembly(typeof(CompileTest)).Location)}{Path.DirectorySeparatorChar}queries",
-                new PgDatabaseProvider()
-            );
-
+            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
             var query = QuerBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
             query.create_tbl_user();
-
+            
             using(var tr = query.BeginTransaction())
             {
                 query.create_user("u1", new byte[0], new byte[0], @"{ ""title"":""test"" }", 1);
@@ -70,7 +67,7 @@ namespace NugSQL.Test
             }
             using(var tr = query.BeginTransaction())
             {
-                query.create_user("u3", new byte[0], new byte[0], @"{ ""title"":""test3"" }", 1);
+                query.create_user("u3", new byte[0], new byte[0], @"{ ""title"":""test3"" }", 0);
                 tr.Rollback();
             }
 
@@ -87,11 +84,7 @@ namespace NugSQL.Test
         //[Fact]
         public void NestedTransactionTest()
         {
-            var typ =  QuerBuilder.Compile<ISample>(
-                $"{Path.GetDirectoryName(Assembly.GetAssembly(typeof(CompileTest)).Location)}{Path.DirectorySeparatorChar}queries",
-                new PgDatabaseProvider()
-            );
-
+            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
             var query = QuerBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
             query.create_tbl_user();

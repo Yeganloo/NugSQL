@@ -5,15 +5,7 @@ namespace NugSQL.Providers
 
     public abstract class DatabaseProvider
     {
-        protected DbProviderFactory _factory;
-
-        public DbProviderFactory Factory
-        {
-            get
-            {
-                return _factory;
-            }
-        }
+        public abstract DbProviderFactory Factory{ get; }
 
         public virtual bool NeedTypeConversion(Type typ)
         {
@@ -22,7 +14,7 @@ namespace NugSQL.Providers
 
         public virtual string ParameterPrefix { get; } = ":";
         
-        protected DbProviderFactory GetFactory(params string[] assemblyQualifiedNames)
+        protected static DbProviderFactory GetFactory(string name, params string[] assemblyQualifiedNames)
         {
             Type ft = null;
             foreach (var assemblyName in assemblyQualifiedNames)
@@ -33,7 +25,7 @@ namespace NugSQL.Providers
             }
 
             if (ft == null)
-                throw new ArgumentException($"Could not load the {GetType().Name} DbProviderFactory.");
+                throw new ArgumentException($"Could not load the {name} DbProviderFactory.");
 
             return (DbProviderFactory) ft.GetField("Instance").GetValue(null);
         }
