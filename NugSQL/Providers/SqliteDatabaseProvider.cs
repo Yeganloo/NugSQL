@@ -13,29 +13,17 @@ namespace NugSQL.Providers
 
         static SqliteDatabaseProvider()
         {
-            var ass = "Microsoft.Data.Sqlite.SqliteFactory, Microsoft.Data.Sqlite";
-            _factory = GetFactory(ass, nameof(SqliteDatabaseProvider), ass);
+            _factory = GetFactory(
+                nameof(SqliteDatabaseProvider),
+                "System.Data.SQLite.SQLiteFactory, System.Data.SQLite",
+                "Microsoft.Data.Sqlite.SqliteFactory, Microsoft.Data.Sqlite");
             if(DbTypeProp == null)
                 DbTypeProp = _factory.CreateParameter().GetType().GetProperty("SqliteType");
         }
 
         public override bool NeedTypeConversion(Type typ)
         {
-            return typ == typeof(Json) || typ == typeof(Jsonb);
-        }
-
-        public static DbParameter MappParameter(DbParameter param, Jsonb value)
-        {
-            param.Value = (string)value;
-            DbTypeProp.SetValue(param, Enum.Parse(DbTypeProp.PropertyType, "Text"));
-            return param;
-        }
-
-        public static DbParameter MappParameter(DbParameter param, Json value)
-        {
-            param.Value = (string)value;
-            DbTypeProp.SetValue(param, Enum.Parse(DbTypeProp.PropertyType, "Text"));
-            return param;
+            return false;
         }
         
     }

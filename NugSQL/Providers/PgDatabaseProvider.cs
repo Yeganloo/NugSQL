@@ -1,7 +1,6 @@
 namespace NugSQL.Providers
 {
     using System;
-    using System.Data;
     using System.Data.Common;
     using System.Reflection;
     public class PgDatabaseProvider : DatabaseProvider
@@ -37,13 +36,6 @@ namespace NugSQL.Providers
             param.Value = (string)value;
             DbTypeProp.SetValue(param, Enum.Parse(DbTypeProp.PropertyType, "Json"));
             return param;
-        }
-
-        public static DbParameter MappParameter(DbParameter parameter, object obj, DbType dbtype)
-        {
-            parameter.Value = obj;
-            parameter.DbType = dbtype;
-            return parameter;
         }
 
     }

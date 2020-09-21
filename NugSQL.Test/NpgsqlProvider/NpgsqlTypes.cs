@@ -4,7 +4,7 @@ using System.Reflection;
 using System.IO;
 using NugSQL.Providers;
 
-namespace NugSQL.Test
+namespace NugSQL.Test.NpgsqlTest
 {
     public class PostgresqlTypeTest
     {

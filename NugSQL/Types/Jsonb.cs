@@ -10,5 +10,6 @@ namespace NugSQL
 
         public static implicit operator string(Jsonb j) => j.Value;
         public static implicit operator Jsonb(string s) => new Jsonb(s);
+        public override string ToString() => this.Value;
     }
 }

@@ -188,7 +188,7 @@
                                     }
                                     il.Emit(OpCodes.Ldc_I4, (int)dbtype);
                                     il.Emit(OpCodes.Call,
-                                        prvType.GetMethod("MappParameter",
+                                        typeof(DatabaseProvider).GetMethod("MappParameter",
                                             new Type[]{parameterType, typeof(object), typeof(DbType)}));
                                 }
                                 else

@@ -31,24 +31,19 @@ namespace NugSQL
         {
             this._database = factory;
             this._connectionString = cnn;
-            this._sharedConnection = GetConnection();
         }
 
-        protected DbConnection GetConnection()
+        protected void OpenSharedConnection()
         {
             if(_sharedConnectionDepth++ == 0)
             {
-                var cnn = _database.CreateConnection();
-                cnn.ConnectionString = _connectionString;
-                if (cnn.State == ConnectionState.Broken)
-                        cnn.Close();
-                if (cnn.State == ConnectionState.Closed)
-                {
-                    cnn.Open();
-                }
-                _sharedConnection = cnn;
+                _sharedConnection = _database.CreateConnection();
+                _sharedConnection.ConnectionString = _connectionString;
+                if (_sharedConnection.State == ConnectionState.Broken)
+                    _sharedConnection.Close();
+                if (_sharedConnection.State == ConnectionState.Closed)
+                    _sharedConnection.Open();
             }
-            return this._sharedConnection;
         }
 
         protected void CloseSharedConnection()
@@ -64,12 +59,24 @@ namespace NugSQL
             var cmd = cnn.CreateCommand();
             cmd.Connection = cnn;
             cmd.CommandType = CommandType.Text;
-            cmd.Transaction = transaction;
+            if(transaction != null)
+            {
+                try
+                {
+                    if(cnn == transaction.Connection)
+                        cmd.Transaction = transaction;
+                }
+                catch
+                {
+                    _transaction = null;
+                }
+            }
             return cmd;
         }
 
         public IDbTransaction BeginTransaction(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
         {
+            OpenSharedConnection();
             _transaction = _sharedConnection.BeginTransaction(isolationLevel);
             return _transaction;
         }
@@ -78,8 +85,8 @@ namespace NugSQL
         {
             try
             {
-                var cnn = GetConnection();
-                using(var cmd = CreateCommand(cnn, this._transaction))
+                OpenSharedConnection();
+                using(var cmd = CreateCommand(_sharedConnection, this._transaction))
                 {
                     cmd.CommandText = query;
                     cmd.CommandType = CommandType.Text;
@@ -100,8 +107,8 @@ namespace NugSQL
         {
             try
             {
-                var cnn = GetConnection();
-                using(var cmd = CreateCommand(cnn, this._transaction))
+                OpenSharedConnection();
+                using(var cmd = CreateCommand(_sharedConnection, this._transaction))
                 {
                     cmd.CommandText = query;
                     cmd.CommandType = CommandType.Text;
@@ -109,8 +116,10 @@ namespace NugSQL
                     {
                         cmd.Parameters.Add(param);
                     }
-                    var res = (T)cmd.ExecuteScalar();
-                    return res;
+                    var res = cmd.ExecuteScalar();
+                    if(!(res is T))
+                        throw new InvalidCastException($"Query result type is: {res.GetType()} but {typeof(T)} expected!\r\nValue: {res}");
+                    return (T)res;
                 }
             }
             finally
@@ -123,8 +132,8 @@ namespace NugSQL
         {
             try
             {
-                var cnn = GetConnection();
-                using(var cmd = CreateCommand(cnn, this._transaction))
+                OpenSharedConnection();
+                using(var cmd = CreateCommand(_sharedConnection, this._transaction))
                 {
                     cmd.CommandText = query;
                     cmd.CommandType = CommandType.Text;
@@ -155,8 +164,8 @@ namespace NugSQL
         {
             try
             {
-                var cnn = GetConnection();
-                using(var cmd = CreateCommand(cnn, this._transaction))
+                OpenSharedConnection();
+                using(var cmd = CreateCommand(_sharedConnection, this._transaction))
                 {
                     cmd.CommandText = query;
                     cmd.CommandType = CommandType.Text;

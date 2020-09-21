@@ -3,7 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace NugSQL.Test
+namespace NugSQL.Test.SqliteTest
 {
     public interface ISample: IQueries
     {
@@ -22,8 +22,7 @@ namespace NugSQL.Test
             Guid my_guid,
             DateTime my_dateTime);
         void create_tbl_user();
-        void create_schema_test();
-        int create_user(string user_name, byte[] password, byte[] salt, Jsonb profile, short status);
+        long create_user(string user_name, byte[] password, byte[] salt, Jsonb profile, short status);
         IEnumerable<User> get_users(string name);
     }
 }

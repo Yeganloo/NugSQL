@@ -1,7 +1,8 @@
 namespace NugSQL.Providers
 {
     using System;
-    using System.Data.Common;
+  using System.Data;
+  using System.Data.Common;
 
     public abstract class DatabaseProvider
     {
@@ -28,6 +29,13 @@ namespace NugSQL.Providers
                 throw new ArgumentException($"Could not load the {name} DbProviderFactory.");
 
             return (DbProviderFactory) ft.GetField("Instance").GetValue(null);
+        }
+
+        public static DbParameter MappParameter(DbParameter parameter, object obj, DbType dbtype)
+        {
+            parameter.Value = obj;
+            parameter.DbType = dbtype;
+            return parameter;
         }
         
     }

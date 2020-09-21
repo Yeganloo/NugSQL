@@ -1,6 +1,7 @@
 -- :name create_tbl_user :affected
 
 -- Table: test.user
+DROP TABLE IF EXISTS "user";
 
 CREATE TABLE "user"
 (
