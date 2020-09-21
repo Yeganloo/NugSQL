@@ -110,7 +110,7 @@ namespace NugSQL.Test
                 Assert.True(u.user_name == "u1" || u.user_name == "u2");
             }
         }
-
+    
 
     }
 }
