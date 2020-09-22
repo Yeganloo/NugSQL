@@ -1,7 +1,5 @@
 # NugSql
 
-> **Attention**: Project is under construction.
-
 ## What is NugSql?
 Nugql is descendant of [HugSql](https://www.hugsql.org/), [PugSql](https://pugsql.org/) and [PetaPoco](https://github.com/CollaboratingPlatypus/PetaPoco). The main idea is that:
 
