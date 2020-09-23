@@ -39,11 +39,11 @@ namespace NugSQL
             {
                 _sharedConnection = _database.CreateConnection();
                 _sharedConnection.ConnectionString = _connectionString;
-                if (_sharedConnection.State == ConnectionState.Broken)
-                    _sharedConnection.Close();
-                if (_sharedConnection.State == ConnectionState.Closed)
-                    _sharedConnection.Open();
             }
+            if (_sharedConnection.State == ConnectionState.Broken)
+                    _sharedConnection.Close();
+            if (_sharedConnection.State == ConnectionState.Closed)
+                _sharedConnection.Open();
         }
 
         protected void CloseSharedConnection()
