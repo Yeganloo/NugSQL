@@ -9,7 +9,7 @@ namespace NugSQL.Test.MSSqlTest
 {
   public class MSSQLProvider
   {
-    string cnn = @"Server=.;Database=db;User Id=user;Password=pass;";
+    string cnn = @"Server=.;Database=db;User Id=sa;Password=pass;";
 
     private string _QueryPath
     {

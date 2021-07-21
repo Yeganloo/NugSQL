@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <LangVersion>8.0</LangVersion>
     <PackageId>NugSQL</PackageId>
     <RootNamespace>NugSQL</RootNamespace>
-    <Version>0.1.0-alpha-1</Version>
+    <Version>0.1.0-alpha-2</Version>
     <Authors>hoseinyeganloo@gmail.com</Authors>
     <Company>Eve</Company>
     <PackageDescription>Simple Micro-ORM</PackageDescription>
