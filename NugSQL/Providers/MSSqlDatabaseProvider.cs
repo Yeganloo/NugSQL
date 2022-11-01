@@ -16,14 +16,15 @@ namespace NugSQL.Providers
         static MSSqlDatabaseProvider()
         {
             _factory = GetFactory(
-                nameof(SqliteDatabaseProvider),
+                nameof(MSSqlDatabaseProvider),
                 "System.Data.SqlClient.SqlClientFactory, System.Data.SqlClient",
                 "Microsoft.Data.SqlClient.SqlClientFactory, Microsoft.Data.SqlClient");
-            if(DbTypeProp == null)
-                DbTypeProp = _factory.CreateParameter().GetType().GetProperty("SqlDbType");
+            if (DbTypeProp == null)
+                DbTypeProp = _factory.CreateParameter()?.GetType().GetProperty("SqlDbType")
+                ?? throw new TypeInitializationException(nameof(MSSqlDatabaseProvider), null);
         }
 
-        public static DbParameter MappParameter(DbParameter param, Json value)
+        public static DbParameter MapParameter(DbParameter param, Json value)
         {
             param.Value = (string)value;
             DbTypeProp.SetValue(param, SqlDbType.NVarChar);
@@ -34,6 +35,6 @@ namespace NugSQL.Providers
         {
             return (typ == typeof(Json));
         }
-        
+
     }
 }

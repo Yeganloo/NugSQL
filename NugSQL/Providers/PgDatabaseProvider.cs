@@ -13,10 +13,10 @@ namespace NugSQL.Providers
 
         static PgDatabaseProvider()
         {
-            var ass = "Npgsql.NpgsqlFactory, Npgsql";
-            _factory = GetFactory(nameof(PgDatabaseProvider), ass);
-            if(DbTypeProp == null)
-                DbTypeProp = _factory.CreateParameter().GetType().GetProperty("NpgsqlDbType");
+            _factory = GetFactory(nameof(PgDatabaseProvider), "Npgsql.NpgsqlFactory, Npgsql");
+            if (DbTypeProp == null)
+                DbTypeProp = _factory.CreateParameter()?.GetType().GetProperty("NpgsqlDbType")
+                ?? throw new TypeInitializationException(nameof(PgDatabaseProvider), null);
         }
 
         public override bool NeedTypeConversion(Type typ)
@@ -24,14 +24,14 @@ namespace NugSQL.Providers
             return (typ == typeof(Json) || typ == typeof(Jsonb));
         }
 
-        public static DbParameter MappParameter(DbParameter param, Jsonb value)
+        public static DbParameter MapParameter(DbParameter param, Jsonb value)
         {
             param.Value = (string)value;
             DbTypeProp.SetValue(param, Enum.Parse(DbTypeProp.PropertyType, "Jsonb"));
             return param;
         }
 
-        public static DbParameter MappParameter(DbParameter param, Json value)
+        public static DbParameter MapParameter(DbParameter param, Json value)
         {
             param.Value = (string)value;
             DbTypeProp.SetValue(param, Enum.Parse(DbTypeProp.PropertyType, "Json"));

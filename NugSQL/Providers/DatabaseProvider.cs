@@ -1,12 +1,12 @@
 namespace NugSQL.Providers
 {
     using System;
-  using System.Data;
-  using System.Data.Common;
+    using System.Data;
+    using System.Data.Common;
 
     public abstract class DatabaseProvider
     {
-        public abstract DbProviderFactory Factory{ get; }
+        public abstract DbProviderFactory Factory { get; }
 
         public virtual bool NeedTypeConversion(Type typ)
         {
@@ -14,10 +14,10 @@ namespace NugSQL.Providers
         }
 
         public virtual string ParameterPrefix { get; } = ":";
-        
+
         protected static DbProviderFactory GetFactory(string name, params string[] assemblyQualifiedNames)
         {
-            Type ft = null;
+            Type? ft = null;
             foreach (var assemblyName in assemblyQualifiedNames)
             {
                 ft = Type.GetType(assemblyName);
@@ -25,18 +25,16 @@ namespace NugSQL.Providers
                     break;
             }
 
-            if (ft == null)
-                throw new ArgumentException($"Could not load the {name} DbProviderFactory.");
-
-            return (DbProviderFactory) ft.GetField("Instance").GetValue(null);
+            return (DbProviderFactory?)ft?.GetField("Instance")?.GetValue(null)
+                ?? throw new ArgumentException($"Could not load the {name} DbProviderFactory.");
         }
 
-        public static DbParameter MappParameter(DbParameter parameter, object obj, DbType dbtype)
+        public static DbParameter MapParameter(DbParameter parameter, object obj, DbType dbType)
         {
             parameter.Value = obj;
-            parameter.DbType = dbtype;
+            parameter.DbType = dbType;
             return parameter;
         }
-        
+
     }
 }

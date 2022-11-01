@@ -17,14 +17,15 @@ namespace NugSQL.Providers
                 nameof(SqliteDatabaseProvider),
                 "System.Data.SQLite.SQLiteFactory, System.Data.SQLite",
                 "Microsoft.Data.Sqlite.SqliteFactory, Microsoft.Data.Sqlite");
-            if(DbTypeProp == null)
-                DbTypeProp = _factory.CreateParameter().GetType().GetProperty("SqliteType");
+            if (DbTypeProp == null)
+                DbTypeProp = _factory.CreateParameter()?.GetType().GetProperty("SqliteType")
+                ?? throw new TypeInitializationException(nameof(SqliteDatabaseProvider), null);
         }
 
         public override bool NeedTypeConversion(Type typ)
         {
             return false;
         }
-        
+
     }
 }

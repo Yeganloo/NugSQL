@@ -12,8 +12,8 @@
 
     public static class QuerBuilder
     {
-        private static readonly Type basetype;
-        private static readonly Type ifactory;
+        private static readonly Type baseType;
+        private static readonly Type iFactory;
         private static readonly Type commandType;
         private static readonly Type dbFactory;
         private static readonly FieldInfo dbFieldRef;
@@ -22,11 +22,11 @@
 
         static QuerBuilder()
         {
-            basetype = typeof(Queries);
-            ifactory = typeof(DbProviderFactory);
+            baseType = typeof(Queries);
+            iFactory = typeof(DbProviderFactory);
             commandType = typeof(DbCommand);
             dbFactory = typeof(DbProviderFactory);
-            dbFieldRef = basetype.GetField("_database", BindingFlags.NonPublic | BindingFlags.Instance);
+            dbFieldRef = baseType.GetField("_database", BindingFlags.NonPublic | BindingFlags.Instance);
             CreateParamInfo = dbFactory.GetMethod("CreateParameter", new Type[0]);
         }
 
@@ -48,13 +48,13 @@
 
             // Inheritance
             tb.AddInterfaceImplementation(typ);
-            tb.SetParent(basetype);
+            tb.SetParent(baseType);
             var prv = tb.DefineField("provider", provider.GetType(), FieldAttributes.Private | FieldAttributes.Static);
             var gens = tb.DefineField("_ResultGenerators", typeof(Func<IDataReader, Object>[]),
                 FieldAttributes.Private | FieldAttributes.Static);
 
             // Constructor
-            var baseCtr = basetype.GetConstructor(
+            var baseCtr = baseType.GetConstructor(
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
                 null,
                 new Type[] {typeof(string), dbFactory},
@@ -211,7 +211,7 @@
                     if(fn.ReturnType == typeof(void))
                     {
                         il.Emit(OpCodes.Call,
-                            basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
+                            baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
                         il.Emit(OpCodes.Pop); // Empty stack before return.
                     }
                     else
@@ -221,28 +221,28 @@
                             default:
                             case ResultTypes.none:
                                 il.Emit(OpCodes.Call,
-                                    basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
+                                    baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
                                 il.Emit(OpCodes.Pop); // Empty stack before return.
                                 break;
                             case ResultTypes.affected:
-                                var mth = basetype.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance);
+                                var mth = baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance);
                                 il.Emit(OpCodes.Call, mth);
                                 break;
                             case ResultTypes.scalar:
                                 il.Emit(OpCodes.Call,
-                                    basetype.GetMethod("Scalar", BindingFlags.NonPublic | BindingFlags.Instance)
+                                    baseType.GetMethod("Scalar", BindingFlags.NonPublic | BindingFlags.Instance)
                                     .MakeGenericMethod(new Type[]{fn.ReturnType}));
                                 break;
                             case ResultTypes.one:
                                 il.Emit(OpCodes.Ldc_I4, resGenCount++);
                                 il.Emit(OpCodes.Call,
-                                    basetype.GetMethod("One", BindingFlags.NonPublic | BindingFlags.Instance)
+                                    baseType.GetMethod("One", BindingFlags.NonPublic | BindingFlags.Instance)
                                     .MakeGenericMethod(new Type[]{fn.ReturnType}));
                                 break;
                             case ResultTypes.many:
                                 il.Emit(OpCodes.Ldc_I4, resGenCount++);
                                 il.Emit(OpCodes.Call,
-                                    basetype.GetMethod("Query", BindingFlags.NonPublic | BindingFlags.Instance)
+                                    baseType.GetMethod("Query", BindingFlags.NonPublic | BindingFlags.Instance)
                                     .MakeGenericMethod(new Type[]{fn.ReturnType.GenericTypeArguments[0]}));
                                 break;
                         }
