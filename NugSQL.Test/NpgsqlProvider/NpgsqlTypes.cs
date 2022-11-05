@@ -21,8 +21,8 @@ namespace NugSQL.Test.NpgsqlTest
         [Fact]
         public void CheckTypes()
         {
-            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
-            var query = QuerBuilder.New<ISample>(cnn, typ);
+            var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
             using(query.BeginTransaction())
             {
                 query.create_schema_test();

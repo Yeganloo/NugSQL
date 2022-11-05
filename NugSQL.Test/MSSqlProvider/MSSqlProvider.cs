@@ -22,15 +22,15 @@ namespace NugSQL.Test.MSSqlTest
     [Fact]
     public void Setup()
     {
-      var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new MSSqlDatabaseProvider());
-      var query = QuerBuilder.New<ISample>(cnn, typ);
+      var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new MSSqlDatabaseProvider());
+      var query = QueryBuilder.New<ISample>(cnn, typ);
     }
 
     [Fact]
     public void Create_table()
     {
-      var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new MSSqlDatabaseProvider());
-      var query = QuerBuilder.New<ISample>(cnn, typ);
+      var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new MSSqlDatabaseProvider());
+      var query = QueryBuilder.New<ISample>(cnn, typ);
       using(query.BeginTransaction())
       {
         query.create_schema_test();
@@ -41,8 +41,8 @@ namespace NugSQL.Test.MSSqlTest
     [Fact]
     public void Transaction_Test()
     {
-      var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new MSSqlDatabaseProvider());
-      var query = QuerBuilder.New<ISample>(cnn, typ);
+      var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new MSSqlDatabaseProvider());
+      var query = QueryBuilder.New<ISample>(cnn, typ);
       query.create_schema_test();
       query.create_tbl_user();
 

@@ -21,32 +21,32 @@ namespace NugSQL.Test.NpgsqlTest
         [Fact]
         public void CompileFromFiles()
         {
-            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
-            var query = QuerBuilder.New<ISample>(cnn, typ);
+            var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
         }
 
         [Fact]
         public void CompileFromResources()
         {
             var assembly = Assembly.GetAssembly(typeof(PostgresqlTest));
-            var typ =  QuerBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
-            var query = QuerBuilder.New<ISample>(cnn, typ);
+            var typ =  QueryBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
         }
 
         [Fact]
         public void CreateScheemaTest()
         {
             var assembly = Assembly.GetAssembly(typeof(PostgresqlTest));
-            var typ =  QuerBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
-            var query = QuerBuilder.New<ISample>(cnn, typ);
+            var typ =  QueryBuilder.Compile<ISample>(assembly, new PgDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
         }
 
         [Fact]
         public void CreateTableTest()
         {
-            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
-            var query = QuerBuilder.New<ISample>(cnn, typ);
+            var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
             query.create_tbl_user();
         }
@@ -54,8 +54,8 @@ namespace NugSQL.Test.NpgsqlTest
         [Fact]
         public void TransactionTest()
         {
-            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
-            var query = QuerBuilder.New<ISample>(cnn, typ);
+            var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
             query.create_tbl_user();
             
@@ -84,8 +84,8 @@ namespace NugSQL.Test.NpgsqlTest
         //[Fact]
         public void NestedTransactionTest()
         {
-            var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
-            var query = QuerBuilder.New<ISample>(cnn, typ);
+            var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new PgDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
             query.create_schema_test();
             query.create_tbl_user();
 

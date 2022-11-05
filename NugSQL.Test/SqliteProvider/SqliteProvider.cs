@@ -22,23 +22,23 @@ namespace NugSQL.Test.SqliteTest
     [Fact]
     public void Setup()
     {
-      var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new SqliteDatabaseProvider());
-      var query = QuerBuilder.New<ISample>(cnn, typ);
+      var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new SqliteDatabaseProvider());
+      var query = QueryBuilder.New<ISample>(cnn, typ);
     }
 
     [Fact]
     public void Create_table()
     {
-      var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new SqliteDatabaseProvider());
-      var query = QuerBuilder.New<ISample>(cnn, typ);
+      var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new SqliteDatabaseProvider());
+      var query = QueryBuilder.New<ISample>(cnn, typ);
       query.create_tbl_user();
     }
 
     [Fact]
     public void Transaction_Test()
     {
-      var typ =  QuerBuilder.Compile<ISample>(_QueryPath,new SqliteDatabaseProvider());
-      var query = QuerBuilder.New<ISample>(cnn, typ);
+      var typ =  QueryBuilder.Compile<ISample>(_QueryPath,new SqliteDatabaseProvider());
+      var query = QueryBuilder.New<ISample>(cnn, typ);
       query.create_tbl_user();
 
       using(var tr = query.BeginTransaction())

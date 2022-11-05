@@ -10,7 +10,7 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
-    public static class QuerBuilder
+    public static class QueryBuilder
     {
         private static readonly Type baseType;
         private static readonly Type iFactory;
@@ -20,7 +20,7 @@
         private static readonly MethodInfo CreateParamInfo;
 
 
-        static QuerBuilder()
+        static QueryBuilder()
         {
             baseType = typeof(Queries);
             iFactory = typeof(DbProviderFactory);
@@ -57,12 +57,12 @@
             var baseCtr = baseType.GetConstructor(
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
                 null,
-                new Type[] {typeof(string), dbFactory},
+                new Type[] { typeof(string), dbFactory },
                 null);
             var ctor = tb.DefineConstructor(
                 MethodAttributes.Public,
                 CallingConventions.Standard,
-                new Type[]{typeof(string)});
+                new Type[] { typeof(string) });
             {
                 var ilg = ctor.GetILGenerator();
                 ilg.Emit(OpCodes.Ldarg_0); // Stack: /this
@@ -94,10 +94,10 @@
             var prvType = provider.GetType();
             var tb = GetBuilder(IType, provider);
             var resGenCount = 0;
-            
+
             // Query Implementation
-            
-            foreach(var fn in IType.GetMethods())
+
+            foreach (var fn in IType.GetMethods())
             {
                 RawQuery query = queries.SingleOrDefault(q => q.Name == fn.Name);
                 var parameters = fn.GetParameters().ToArray();
@@ -120,12 +120,12 @@
                     il.Emit(OpCodes.Newarr, parameterType);
                     il.Emit(OpCodes.Stloc, arr);
                     // Stack: /
-                    for(int i=0; i< parameters.Length; i++)
+                    for (int i = 0; i < parameters.Length; i++)
                     {
                         var parType = parameters[i].ParameterType;
                         il.Emit(OpCodes.Ldloc, arr);
                         // Stack: /arr/
-                        if(parType.IsSubclassOf(parameterType))
+                        if (parType.IsSubclassOf(parameterType))
                         {
                             il.Emit(OpCodes.Ldc_I4, i);
                             il.Emit(OpCodes.Ldarg, i + 1);
@@ -156,7 +156,7 @@
                                 if (parameters[i].ParameterType.Name == "Byte[]")
                                 {
                                     il.Emit(OpCodes.Dup);
-                                    il.Emit(OpCodes.Ldc_I4,(int)DbType.Binary);
+                                    il.Emit(OpCodes.Ldc_I4, (int)DbType.Binary);
                                     il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType)).SetMethod);
                                 }
                                 il.Emit(OpCodes.Dup);
@@ -171,25 +171,28 @@
                             il.MarkLabel(notNull);
                             // Stack: /arr/i/p[i]/
                             {
-                                if(provider.NeedTypeConversion(parType))
+                                if (provider.NeedTypeConversion(parType))
                                 {
                                     il.Emit(OpCodes.Ldarg, i + 1);
                                     il.Emit(OpCodes.Call,
-                                        prvType.GetMethod("MappParameter",
-                                            new Type[]{parameterType, parType}));
+                                        prvType.GetMethod("MapParameter",
+                                            new Type[] { parameterType, parType }));
                                 }
                                 // TODO why this part fail if i set dbtype in IL?!
-                                else if(Enum.TryParse<DbType>(parType.Name, true,out DbType dbtype))
+                                else if (Enum.TryParse<DbType>(parType.Name, true, out DbType dbtype))
                                 {
                                     il.Emit(OpCodes.Ldarg, i + 1);
-                                    if(parType.IsValueType)
+                                    if (parType.IsValueType)
                                     {
                                         il.Emit(OpCodes.Box, parType);
                                     }
                                     il.Emit(OpCodes.Ldc_I4, (int)dbtype);
+                                    //BUG Value is null!!!
                                     il.Emit(OpCodes.Call,
-                                        typeof(DatabaseProvider).GetMethod("MappParameter",
-                                            new Type[]{parameterType, typeof(object), typeof(DbType)}));
+                                        typeof(DatabaseProvider).GetMethod(
+                                            "MapParameter",
+                                            BindingFlags.Static | BindingFlags.Public,
+                                            new Type[] { typeof(DbParameter), typeof(object), typeof(DbType) }));
                                 }
                                 else
                                 {
@@ -208,7 +211,7 @@
                     il.Emit(OpCodes.Ldstr, query.Query);
                     il.Emit(OpCodes.Ldloc, arr);
                     // Stack: this/query/arr/
-                    if(fn.ReturnType == typeof(void))
+                    if (fn.ReturnType == typeof(void))
                     {
                         il.Emit(OpCodes.Call,
                             baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
@@ -216,7 +219,7 @@
                     }
                     else
                     {
-                        switch(query.ResultType)
+                        switch (query.ResultType)
                         {
                             default:
                             case ResultTypes.none:
@@ -231,19 +234,19 @@
                             case ResultTypes.scalar:
                                 il.Emit(OpCodes.Call,
                                     baseType.GetMethod("Scalar", BindingFlags.NonPublic | BindingFlags.Instance)
-                                    .MakeGenericMethod(new Type[]{fn.ReturnType}));
+                                    .MakeGenericMethod(new Type[] { fn.ReturnType }));
                                 break;
                             case ResultTypes.one:
                                 il.Emit(OpCodes.Ldc_I4, resGenCount++);
                                 il.Emit(OpCodes.Call,
                                     baseType.GetMethod("One", BindingFlags.NonPublic | BindingFlags.Instance)
-                                    .MakeGenericMethod(new Type[]{fn.ReturnType}));
+                                    .MakeGenericMethod(new Type[] { fn.ReturnType }));
                                 break;
                             case ResultTypes.many:
                                 il.Emit(OpCodes.Ldc_I4, resGenCount++);
                                 il.Emit(OpCodes.Call,
                                     baseType.GetMethod("Query", BindingFlags.NonPublic | BindingFlags.Instance)
-                                    .MakeGenericMethod(new Type[]{fn.ReturnType.GenericTypeArguments[0]}));
+                                    .MakeGenericMethod(new Type[] { fn.ReturnType.GenericTypeArguments[0] }));
                                 break;
                         }
                     }
@@ -261,16 +264,16 @@
         public static IEnumerable<RawQuery> ReadQueries(string source)
         {
             List<RawQuery> res = new List<RawQuery>();
-            foreach(var fl in Directory.GetFiles(source, "*.sql"))
+            foreach (var fl in Directory.GetFiles(source, "*.sql"))
             {
                 ResultTypes resultType = ResultTypes.affected;
                 string name = string.Empty;
-                using(var f = new StreamReader(File.Open(fl, FileMode.Open, FileAccess.Read)))
+                using (var f = new StreamReader(File.Open(fl, FileMode.Open, FileAccess.Read)))
                 {
-                    var cfg = f.ReadLine()?.Split(new char[]{':',' '}, StringSplitOptions.RemoveEmptyEntries);
-                    for (var i=0; i < cfg?.Length; i++)
+                    var cfg = f.ReadLine()?.Split(new char[] { ':', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    for (var i = 0; i < cfg?.Length; i++)
                     {
-                        switch(cfg[i])
+                        switch (cfg[i])
                         {
                             case "many":
                                 resultType = ResultTypes.many;
@@ -298,18 +301,18 @@
         public static IEnumerable<RawQuery> ReadQueries(Assembly source)
         {
             List<RawQuery> res = new List<RawQuery>();
-            foreach(var fl in source.GetManifestResourceNames())
+            foreach (var fl in source.GetManifestResourceNames())
             {
-                if(!fl.EndsWith(".sql"))
+                if (!fl.EndsWith(".sql"))
                     continue;
                 ResultTypes resultType = ResultTypes.affected;
                 string name = string.Empty;
-                using(var f = new StreamReader(source.GetManifestResourceStream(fl)))
+                using (var f = new StreamReader(source.GetManifestResourceStream(fl)))
                 {
-                    var cfg = f.ReadLine()?.Split(new char[]{':',' '}, StringSplitOptions.RemoveEmptyEntries);
-                    for (var i=0; i < cfg?.Length; i++)
+                    var cfg = f.ReadLine()?.Split(new char[] { ':', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    for (var i = 0; i < cfg?.Length; i++)
                     {
-                        switch(cfg[i])
+                        switch (cfg[i])
                         {
                             case "many":
                                 resultType = ResultTypes.many;
@@ -336,7 +339,7 @@
 
         public static I New<I>(string connection, Type typ)
         {
-            var res =  (I)Activator.CreateInstance(typ, connection);
+            var res = (I)Activator.CreateInstance(typ, connection);
             return res;
         }
 
