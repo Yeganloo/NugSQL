@@ -47,13 +47,14 @@ namespace NugSQL.Test.OracleTest
 
             using (var tr = query.BeginTransaction())
             {
-                query.create_user(1, "u1", "", "", @"{ ""title"":""test"" }", 1);
-                query.create_user(2, "u2", "", "", @"{ ""title"":""test"" }", 1);
+                //BUG string.empty is translating to null!
+                query.create_user(1, "u1", " ", " ", @"{ ""title"":""test"" }", 1);
+                query.create_user(2, "u2", " ", " ", @"{ ""title"":""test"" }", 1);
                 tr.Commit();
             }
             using (var tr = query.BeginTransaction())
             {
-                query.create_user(3, "u3", "", "", @"{ ""title"":""test3"" }", 1);
+                query.create_user(3, "u3", " ", " ", @"{ ""title"":""test3"" }", 1);
                 tr.Rollback();
             }
             foreach (var u in query.get_users("u%"))
