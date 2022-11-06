@@ -270,7 +270,10 @@
                 string name = string.Empty;
                 using (var f = new StreamReader(File.Open(fl, FileMode.Open, FileAccess.Read)))
                 {
-                    var cfg = f.ReadLine()?.Split(new char[] { ':', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    var line = "";
+                    while (!f.EndOfStream && !string.IsNullOrEmpty(line.Trim()))
+                        line = f.ReadLine();
+                    var cfg = line?.Split(new char[] { ':', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     for (var i = 0; i < cfg?.Length; i++)
                     {
                         switch (cfg[i])
