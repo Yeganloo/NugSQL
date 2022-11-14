@@ -26,14 +26,16 @@
             iFactory = typeof(DbProviderFactory);
             commandType = typeof(DbCommand);
             dbFactory = typeof(DbProviderFactory);
-            dbFieldRef = baseType.GetField("_database", BindingFlags.NonPublic | BindingFlags.Instance);
-            CreateParamInfo = dbFactory.GetMethod("CreateParameter", new Type[0]);
+            dbFieldRef = baseType.GetField("_database", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new TypeLoadException("Could not find '_database' in 'Queries'.");
+            CreateParamInfo = dbFactory.GetMethod("CreateParameter", new Type[0])
+                ?? throw new TypeLoadException("Could not find 'CreateParameter' in 'DbProviderFactory'.");
         }
 
         private static TypeBuilder GetBuilder(Type typ, DatabaseProvider provider)
         {
             // Create Type Builder
-            var ass = AssemblyBuilder.DefineDynamicAssembly(
+            AssemblyBuilder ass = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName($"nugsql_{Guid.NewGuid().ToString()}"),
                 AssemblyBuilderAccess.Run);
             ModuleBuilder mod = ass.DefineDynamicModule("main");
@@ -54,12 +56,12 @@
                 FieldAttributes.Private | FieldAttributes.Static);
 
             // Constructor
-            var baseCtr = baseType.GetConstructor(
+            ConstructorInfo baseCtr = baseType.GetConstructor(
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
                 null,
                 new Type[] { typeof(string), dbFactory },
-                null);
-            var ctor = tb.DefineConstructor(
+                null) ?? throw new TypeLoadException("Could not find ctor of 'Queries'.");
+            ConstructorBuilder ctor = tb.DefineConstructor(
                 MethodAttributes.Public,
                 CallingConventions.Standard,
                 new Type[] { typeof(string) });
@@ -69,7 +71,8 @@
                 ilg.Emit(OpCodes.Ldarg_1); // Stack: /this/cnn
                 ilg.Emit(OpCodes.Ldarg_0); // Stack: /this/cnn/this
                 ilg.Emit(OpCodes.Ldfld, prv); // Stack: /this/cnn/provider
-                ilg.Emit(OpCodes.Callvirt, provider.GetType().GetProperty("Factory").GetMethod); // this/cnn/factory
+                ilg.Emit(OpCodes.Callvirt, provider.GetType().GetProperty("Factory")?.GetMethod
+                    ?? throw new TypeLoadException($"Could not find factory getter of this db-provider.")); // this/cnn/factory
                 ilg.Emit(OpCodes.Call, baseCtr); // Stack: /
                 ilg.Emit(OpCodes.Ret);
             }
@@ -89,9 +92,10 @@
 
         public static Type Compile<I>(IEnumerable<RawQuery> queries, DatabaseProvider provider) where I : IQueries
         {
-            var parameterType = provider.Factory.CreateParameter().GetType();
             var IType = typeof(I);
             var prvType = provider.GetType();
+            Type parameterType = provider.Factory.CreateParameter()?.GetType()
+                ?? throw new ArgumentException("Could not get db-provider parameter type.");
             var tb = GetBuilder(IType, provider);
             var resGenCount = 0;
 
@@ -143,7 +147,8 @@
                             // Set parameter name
                             il.Emit(OpCodes.Dup);
                             il.Emit(OpCodes.Ldstr, $"{provider.ParameterPrefix}{parameters[i].Name}");
-                            il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.ParameterName)).SetMethod);
+                            il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.ParameterName))?.SetMethod
+                                ?? throw new TypeLoadException($"Could not find set method of '{nameof(DbParameter.ParameterName)}'"));
                             // Stack: /arr/i/p[i]/
                             var notNull = il.DefineLabel();
                             var isNull = il.DefineLabel();
@@ -157,11 +162,13 @@
                                 {
                                     il.Emit(OpCodes.Dup);
                                     il.Emit(OpCodes.Ldc_I4, (int)DbType.Binary);
-                                    il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType)).SetMethod);
+                                    il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.DbType))?.SetMethod
+                                        ?? throw new TypeLoadException($"Could not find set method of '{nameof(DbParameter.DbType)}'"));
                                 }
                                 il.Emit(OpCodes.Dup);
                                 il.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField("Value"));
-                                il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value)).SetMethod);
+                                il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value))?.SetMethod
+                                    ?? throw new TypeLoadException($"Could not find set method of '{nameof(DbParameter.Value)}'"));
 
                                 il.Emit(OpCodes.Stelem_Ref);
                                 // Stack: /
@@ -176,7 +183,8 @@
                                     il.Emit(OpCodes.Ldarg, i + 1);
                                     il.Emit(OpCodes.Call,
                                         prvType.GetMethod("MapParameter",
-                                            new Type[] { parameterType, parType }));
+                                            new Type[] { parameterType, parType })
+                                            ?? throw new TypeLoadException($"Could not find 'MapParameter' for '{parType.Name}' on this db-provider."));
                                 }
                                 // TODO why this part fail if i set dbtype in IL?!
                                 else if (Enum.TryParse<DbType>(parType.Name, true, out DbType dbtype))
@@ -192,13 +200,15 @@
                                         typeof(DatabaseProvider).GetMethod(
                                             "MapParameter",
                                             BindingFlags.Static | BindingFlags.Public,
-                                            new Type[] { typeof(DbParameter), typeof(object), typeof(DbType) }));
+                                            new Type[] { typeof(DbParameter), typeof(object), typeof(DbType) })
+                                            ?? throw new TypeLoadException($"Could not find 'MapParameter' for '{parType.Name}' on default db-provider."));
                                 }
                                 else
                                 {
                                     il.Emit(OpCodes.Dup);
                                     il.Emit(OpCodes.Ldarg, i + 1);
-                                    il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value)).SetMethod);
+                                    il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value))?.SetMethod
+                                        ?? throw new TypeLoadException($"Could not find set method of '{nameof(DbParameter.Value)}'"));
                                 }
                                 il.Emit(OpCodes.Stelem_Ref);
                             }
@@ -214,7 +224,8 @@
                     if (fn.ReturnType == typeof(void))
                     {
                         il.Emit(OpCodes.Call,
-                            baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
+                            baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance)
+                                ?? throw new TypeLoadException($"Could not find 'NonQuery' on base db-provider."));
                         il.Emit(OpCodes.Pop); // Empty stack before return.
                     }
                     else
@@ -224,29 +235,33 @@
                             default:
                             case ResultTypes.none:
                                 il.Emit(OpCodes.Call,
-                                    baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance));
+                                    baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance)
+                                    ?? throw new TypeLoadException($"Could not find 'NonQuery' on base db-provider."));
                                 il.Emit(OpCodes.Pop); // Empty stack before return.
                                 break;
                             case ResultTypes.affected:
-                                var mth = baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance);
-                                il.Emit(OpCodes.Call, mth);
+                                il.Emit(OpCodes.Call, baseType.GetMethod("NonQuery", BindingFlags.NonPublic | BindingFlags.Instance)
+                                ?? throw new TypeLoadException($"Could not find 'NonQuery' on base db-provider."));
                                 break;
                             case ResultTypes.scalar:
                                 il.Emit(OpCodes.Call,
                                     baseType.GetMethod("Scalar", BindingFlags.NonPublic | BindingFlags.Instance)
-                                    .MakeGenericMethod(new Type[] { fn.ReturnType }));
+                                    ?.MakeGenericMethod(new Type[] { fn.ReturnType })
+                                    ?? throw new TypeLoadException($"Could not find 'Scalar' on base db-provider."));
                                 break;
                             case ResultTypes.one:
                                 il.Emit(OpCodes.Ldc_I4, resGenCount++);
                                 il.Emit(OpCodes.Call,
                                     baseType.GetMethod("One", BindingFlags.NonPublic | BindingFlags.Instance)
-                                    .MakeGenericMethod(new Type[] { fn.ReturnType }));
+                                    ?.MakeGenericMethod(new Type[] { fn.ReturnType })
+                                    ?? throw new TypeLoadException($"Could not find 'One' on base db-provider."));
                                 break;
                             case ResultTypes.many:
                                 il.Emit(OpCodes.Ldc_I4, resGenCount++);
                                 il.Emit(OpCodes.Call,
                                     baseType.GetMethod("Query", BindingFlags.NonPublic | BindingFlags.Instance)
-                                    .MakeGenericMethod(new Type[] { fn.ReturnType.GenericTypeArguments[0] }));
+                                    ?.MakeGenericMethod(new Type[] { fn.ReturnType.GenericTypeArguments[0] })
+                                    ?? throw new TypeLoadException($"Could not find 'Query' on base db-provider."));
                                 break;
                         }
                     }
@@ -254,10 +269,10 @@
                     tb.DefineMethodOverride(mb, fn);
                 }
             }
-            Type typ = tb.CreateType();
-            typ.GetField("provider", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, provider);
+            Type typ = tb.CreateType() ?? throw new TypeLoadException($"Failed to create query type!");
+            typ.GetField("provider", BindingFlags.Static | BindingFlags.NonPublic)?.SetValue(null, provider);
             typ.GetField("_ResultGenerators", BindingFlags.Static | BindingFlags.NonPublic)
-                .SetValue(null, new Func<IDataReader, object>[resGenCount]);
+                ?.SetValue(null, new Func<IDataReader, object>[resGenCount]);
             return typ;
         }
 
@@ -342,8 +357,7 @@
 
         public static I New<I>(string connection, Type typ)
         {
-            var res = (I)Activator.CreateInstance(typ, connection);
-            return res;
+            return (I)Activator.CreateInstance(typ, connection);
         }
 
     }

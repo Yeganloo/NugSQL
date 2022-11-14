@@ -119,7 +119,7 @@ namespace NugSQL
                     }
                     var res = cmd.ExecuteScalar();
                     if (!(res is T))
-                        throw new InvalidCastException($"Query result type is: {res.GetType()} but {typeof(T)} expected!\r\nValue: {res}");
+                        throw new InvalidCastException($"Query result type is: {res?.GetType().ToString() ?? "Null"} but {typeof(T)} expected!\r\nValue: {res}");
                     return (T)res;
                 }
             }
