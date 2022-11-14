@@ -11,5 +11,6 @@ namespace NugSQL.Test.OracleTest
         void create_tbl_user();
         int create_user(int id, string user_name, string password, string salt, string profile, short status);
         IEnumerable<User> get_users(string name);
+        int? NullResult();
     }
 }

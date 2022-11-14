@@ -71,5 +71,13 @@ namespace NugSQL.Test.OracleTest
             Assert.True(query.get_users("%admin%").Count() >= 2);
         }
 
+        [Fact]
+        public void Null_Result()
+        {
+            var typ = QueryBuilder.Compile<ISample>(_QueryPath, new OracleDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
+            Assert.True(!query.NullResult().HasValue);
+        }
+
     }
 }

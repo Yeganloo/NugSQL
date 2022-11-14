@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NugSQL\NugSQL.csproj" />
-    <Content Include="*-queries\*.*">
+    <Content Include="*-queries\*.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
