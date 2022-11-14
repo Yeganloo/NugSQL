@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <PackageId>NugSQL</PackageId>
     <RootNamespace>NugSQL</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>hoseinyeganloo@gmail.com</Authors>
     <Company>Eve</Company>
     <PackageDescription>Simple Micro-ORM</PackageDescription>
