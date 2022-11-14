@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <PackageId>NugSQL</PackageId>
     <RootNamespace>NugSQL</RootNamespace>
-    <Version>0.1.3</Version>
+    <Version>0.1.4</Version>
     <Authors>hoseinyeganloo@gmail.com</Authors>
     <Company>Eve</Company>
     <PackageDescription>Simple Micro-ORM</PackageDescription>
@@ -16,7 +16,6 @@
     <Copyright>Hosein Yeganloo - 2020</Copyright>
     <PackageTags>Database, ORM, Micro-ORM</PackageTags>
     <RepositoryURL>https://github.com/Yeganloo/NugSQL</RepositoryURL>
-    <ReadMe>README.md</ReadMe>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -24,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="4.7.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../LICENSE" Pack="true" PackagePath="$(PackageLicenseFile)" />
