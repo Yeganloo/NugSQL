@@ -74,20 +74,20 @@ public interface IMyDB: IQueries
 }
 ```
 
-### 4. compile queries:
+### 4. compile queries: (Singleton)
 From external files:
 ``` c#
-var MyDBCompiledQuery =  QuerBuilder.Compile<IMyDB>("path/to/queries", new PgDatabaseProvider());
+var MyDBCompiledQuery =  QueryBuilder.Compile<IMyDB>("path/to/queries", new PgDatabaseProvider());
 ```
 Or from embedded resources:
 ``` c#
 var assembly = Assembly.GetAssembly(typeof(IMyDB));
-var MyDBCompiledQuery =  QuerBuilder.Compile<IMyDB>(assembly, new PgDatabaseProvider());
+var MyDBCompiledQuery =  QueryBuilder.Compile<IMyDB>(assembly, new PgDatabaseProvider());
 ```
 
-### 5. connect to database and use it:
+### 5. connect to database and use it: (Transient or Scoped)
 ``` c#
-var MyDB = QuerBuilder.New<IMyDB>(cnn, MyDBCompiledQuery);
+var MyDB = QueryBuilder.New<IMyDB>(cnn, MyDBCompiledQuery);
 using(var tr = MyDB.BeginTransaction())
 {
     MyDB.create_user("u1", new byte[0], new byte[0], @"{ ""title"":""test1"" }", 1);

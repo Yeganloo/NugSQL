@@ -16,6 +16,7 @@
     <Copyright>Hosein Yeganloo - 2020</Copyright>
     <PackageTags>Database, ORM, Micro-ORM</PackageTags>
     <RepositoryURL>https://github.com/Yeganloo/NugSQL</RepositoryURL>
+    <ReadMe>README.md</ReadMe>
   </PropertyGroup>
 
   <PropertyGroup>
