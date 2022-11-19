@@ -4,8 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using Xunit;
-
-
+using Oracle.ManagedDataAccess.Client;
 
 namespace NugSQL.Test.OracleTest
 {
@@ -46,7 +45,8 @@ namespace NugSQL.Test.OracleTest
             var query = QueryBuilder.New<ISample>(cnn, typ);
             //query.create_tbl_user();
 
-            using (var tr = query.BeginTransaction()){
+            using (var tr = query.BeginTransaction())
+            {
                 query.DeleteTestUsers();
                 tr.Commit();
             }
@@ -68,6 +68,32 @@ namespace NugSQL.Test.OracleTest
             {
                 Assert.True(u.user_name == "u1" || u.user_name == "u2");
             }
+        }
+
+        [Fact]
+        public void List_Param_Test()
+        {
+            var typ = QueryBuilder.Compile<ISample>(_QueryPath, new OracleDatabaseProvider());
+            var query = QueryBuilder.New<ISample>(cnn, typ);
+
+            query.DeleteTestUsers();
+            using (var tr = query.BeginTransaction())
+            {
+                //BUG string.empty is translating to null!
+                query.create_user(-1, "u1", " ", " ", @"{ ""title"":""test"" }", 1);
+                query.create_user(-2, "u2", " ", " ", @"{ ""title"":""test"" }", 1);
+                tr.Commit();
+            }
+
+            var qr = new List<oraUser>(query.get_users_by_id(
+                new OracleParameter{
+                    OracleDbType = OracleDbType.Int32,
+                    CollectionType = OracleCollectionType.PLSQLAssociativeArray,
+                    ParameterName = ":ids",
+                    Value = new int[2] { -1, -2 },
+                    Size = 2
+                }));
+            Assert.True(qr.Count() == 2);
         }
 
         [Fact]
