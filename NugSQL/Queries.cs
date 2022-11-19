@@ -236,7 +236,7 @@ namespace NugSQL
                 var rr = ilg.DeclareLocal(returnType);
                 ilg.Emit(OpCodes.Newobj, returnType.GetConstructor(Type.EmptyTypes));
                 ilg.Emit(OpCodes.Stloc, rr);
-
+                //TODO add type check for every field to throw proper exception.
                 for (int i = 0; i < reader.FieldCount; i++)
                 {
                     var prop = returnType.GetProperty(reader.GetName(i));

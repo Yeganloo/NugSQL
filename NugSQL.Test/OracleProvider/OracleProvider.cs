@@ -2,6 +2,7 @@ using NugSQL.Providers;
 using System.Linq;
 using System.IO;
 using System.Reflection;
+using System.Collections.Generic;
 using Xunit;
 
 
@@ -45,30 +46,28 @@ namespace NugSQL.Test.OracleTest
             var query = QueryBuilder.New<ISample>(cnn, typ);
             //query.create_tbl_user();
 
-            using (var tr = query.BeginTransaction())
-            {
-                //BUG string.empty is translating to null!
-                query.create_user(1, "u1", " ", " ", @"{ ""title"":""test"" }", 1);
-                query.create_user(2, "u2", " ", " ", @"{ ""title"":""test"" }", 1);
+            using (var tr = query.BeginTransaction()){
+                query.DeleteTestUsers();
                 tr.Commit();
             }
             using (var tr = query.BeginTransaction())
             {
-                query.create_user(3, "u3", " ", " ", @"{ ""title"":""test3"" }", 1);
+                //BUG string.empty is translating to null!
+                query.create_user(-1, "u1", " ", " ", @"{ ""title"":""test"" }", 1);
+                query.create_user(-2, "u2", " ", " ", @"{ ""title"":""test"" }", 1);
+                tr.Commit();
+            }
+            using (var tr = query.BeginTransaction())
+            {
+                query.create_user(-3, "u3", " ", " ", @"{ ""title"":""test3"" }", 1);
                 tr.Rollback();
             }
-            foreach (var u in query.get_users("u%"))
+            var qr = new List<oraUser>(query.get_users("u%"));
+            Assert.True(qr.Count() > 1);
+            foreach (var u in qr)
             {
                 Assert.True(u.user_name == "u1" || u.user_name == "u2");
             }
-        }
-
-        [Fact]
-        public void List_Test()
-        {
-            var typ = QueryBuilder.Compile<ISample>(_QueryPath, new OracleDatabaseProvider());
-            var query = QueryBuilder.New<ISample>(cnn, typ);
-            Assert.True(query.get_users("%admin%").Count() >= 2);
         }
 
         [Fact]

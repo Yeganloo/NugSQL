@@ -166,7 +166,7 @@
                                         ?? throw new TypeLoadException($"Could not find set method of '{nameof(DbParameter.DbType)}'"));
                                 }
                                 il.Emit(OpCodes.Dup);
-                                il.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField("Value"));
+                                il.Emit(OpCodes.Ldsfld, typeof(DBNull).GetField("Value") ?? throw new ReflectionTypeLoadException(null, null, "Value not found!"));
                                 il.Emit(OpCodes.Callvirt, parameterType.GetProperty(nameof(DbParameter.Value))?.SetMethod
                                     ?? throw new TypeLoadException($"Could not find set method of '{nameof(DbParameter.Value)}'"));
 
@@ -286,7 +286,7 @@
                 using (var f = new StreamReader(File.Open(fl, FileMode.Open, FileAccess.Read)))
                 {
                     var line = "";
-                    while (!f.EndOfStream && string.IsNullOrEmpty(line.Trim()))
+                    while (!f.EndOfStream && string.IsNullOrEmpty(line?.Trim()))
                         line = f.ReadLine();
                     var cfg = line?.Split(new char[] { ':', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     for (var i = 0; i < cfg?.Length; i++)
